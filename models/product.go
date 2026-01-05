@@ -1,30 +1,47 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+
 	"github.com/google/uuid"
-	"gorm.io/gorm"
-	"github.com/lib/pq"
 )
 
-// Modèle pour les produits
-type Product struct {
-	ID             uuid.UUID      `gorm:"type:uuid;primaryKey;" json:"id"`
-	Name           string         `gorm:"type:varchar(100);not null" json:"name"`
-	Description    string         `gorm:"type:text" json:"description"`
-	Category       string         `gorm:"type:varchar(100);" json:"category"`
-	Price          float64        `gorm:"type:numeric(10,2);not null" json:"price"`
-	Taille         string         `gorm:"type:varchar(50);" json:"taille"`
-	Marque         string         `gorm:"type:varchar(100);" json:"marque"`
-	Couleur        string         `gorm:"type:varchar(50);" json:"couleur"`
-	Caracteristique string        `gorm:"type:text;" json:"caracteristique"`
-	Images         pq.StringArray `gorm:"type:text[]" json:"images"` 
-	Stock          int            `gorm:"type:int;not null" json:"stock"`
-	Rating         float64 			  `gorm:"type:int;not null" json:"rating"`
-	Favorit        bool           `gorm:"default:false" json:"favorit"` 
+// Type pour JSON "images"
+type StringArray []string
+
+func (sa *StringArray) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("type assertion failed")
+	}
+	return json.Unmarshal(b, sa)
 }
 
-// Génération automatique de l'UUID avant la création
-func (p *Product) BeforeCreate(tx *gorm.DB) (err error) {
+func (sa StringArray) Value() (driver.Value, error) {
+	return json.Marshal(sa)
+}
+
+// Modèle Product avec UUID comme ID
+type Product struct {
+	ID              uuid.UUID   `gorm:"type:uuid;primaryKey" json:"id"`
+	Name            string      `json:"name"`
+	Description     string      `json:"description"`
+	Category        string      `json:"category"`
+	Price           float64     `json:"price"`
+	Taille          string      `json:"taille"`
+	Marque          string      `json:"marque"`
+	Couleur         string      `json:"couleur"`
+	Caracteristique string      `json:"caracteristique"`
+	Images          StringArray `gorm:"type:jsonb" json:"images"`
+	Stock           int         `json:"stock"`
+	Rating          int         `json:"rating"`
+	Favorit         bool        `json:"favorit"`
+}
+
+// Avant de créer un produit, génère l'UUID
+func (p *Product) BeforeCreate(tx any) (err error) {
 	p.ID = uuid.New()
 	return
 }

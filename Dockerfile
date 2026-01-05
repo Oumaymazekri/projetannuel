@@ -1,24 +1,35 @@
-# Utiliser l'image officielle de Go
-FROM golang:1.23.4 AS build
+# ===============================
+# 1️⃣ BUILD STAGE
+# ===============================
+FROM golang:1.23-alpine AS builder
 
-# Définir le répertoire de travail
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
 WORKDIR /app
 
-# Copier les fichiers Go et go.mod
+# Copier les fichiers go.mod pour le cache
 COPY go.mod go.sum ./
+RUN go mod download
 
-# Exécuter go mod tidy pour résoudre les dépendances
-RUN go mod tidy
-
-# Copier le reste du code source
+# Copier le reste du code
 COPY . .
 
-# Compiler le service
-RUN go build -o product-service
+# Build optimisé (binaire léger)
+RUN go build -ldflags="-s -w" -o product-service main.go
 
-# Exposer le port du service
+
+# ===============================
+# 2️⃣ RUNTIME STAGE (ULTRA LÉGER)
+# ===============================
+FROM gcr.io/distroless/base-debian12
+
+WORKDIR /app
+
+COPY --from=builder /app/product-service .
+
 EXPOSE 3001
 
-# Démarrer le service
-CMD ["go", "run", "main.go"]
-
+USER nonroot:nonroot
+CMD ["/app/product-service"]

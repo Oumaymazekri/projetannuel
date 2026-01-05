@@ -19,22 +19,12 @@ import (
 // }
 
 func AddProduct(c *fiber.Ctx) error {
-	// Vérification du JWT
-	// claims, err := verifyJWT(c)
-	// if err != nil {
-	// 	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
-	// }
-	// _ = claims
-
-	// Initialiser un nouveau produit
 	product := new(models.Product)
 	if err := c.BodyParser(product); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
-
 	// Ajouter l'ID du produit
 	product.ID = uuid.New()
-
 	// Obtenir le répertoire de travail courant
 	workingDir, err := os.Getwd()
 	if err != nil {
@@ -62,7 +52,7 @@ func AddProduct(c *fiber.Ctx) error {
 		fileName := uuid.New().String() + "_" + fileHeader.Filename
 
 		// Créer le chemin complet
-		imagesDir := filepath.Join(workingDir, "images")
+		imagesDir := filepath.Join(workingDir, "images", "products")
 		filePath := filepath.Join(imagesDir, fileName)
 
 		// Créer le dossier s'il n'existe pas
@@ -153,7 +143,6 @@ func UpdateProduct(c *fiber.Ctx) error {
 	product.Description = description
 	product.Caracteristique = caracteristique
 
-
 	// Conversion numérique si nécessaire
 	if p, err := strconv.ParseFloat(price, 64); err == nil {
 		product.Price = p
@@ -161,7 +150,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	if s, err := strconv.Atoi(stock); err == nil {
 		product.Stock = s
 	}
-	if r, err := strconv.ParseFloat(rating, 64); err == nil {
+	if r, err := strconv.Atoi(rating); err == nil {
 		product.Rating = r
 	}
 
@@ -169,7 +158,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	if err == nil && form.File["images"] != nil {
 		workingDir, _ := os.Getwd()
-		imagesDir := filepath.Join(workingDir, "images")
+		imagesDir := filepath.Join(workingDir, "images", "products")
 		os.MkdirAll(imagesDir, os.ModePerm)
 
 		var newImagePaths []string

@@ -1,0 +1,55 @@
+name: Go CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Récupérer le code
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Installer Go
+      - name: 🟢 Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      # 3️⃣ Télécharger les dépendances
+      - name: 📦 Go modules download
+        run: go mod download
+
+      # 4️⃣ Lancer les tests
+      - name: 🧪 Run Go tests
+        run: go test ./...
+
+      # 5️⃣ Build de l'application Go
+      - name: 🏗️ Build Go application
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o product-service
+
+      # 6️⃣ Build de l'image Docker
+      - name: 🐳 Build Docker image
+        run: docker build -t product-service:latest .
+
+      # =========================
+      # 7️⃣ (OPTIONNEL) PUSH DOCKER HUB
+      # =========================
+      # ⚠️ Nécessite les secrets :
+      # DOCKER_USERNAME
+      # DOCKER_PASSWORD
+
+      # - name: 🔐 Login to DockerHub
+      #   run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      # - name: 📤 Push Docker image
+      #   run: |
+      #     docker tag product-service:latest ${{ secrets.DOCKER_USERNAME }}/product-service:latest
+      #     docker push ${{ secrets.DOCKER_USERNAME }}/product-service:latest
